@@ -25,7 +25,7 @@ namespace API.Domain.Hero.AddressRequest
         [JsonPropertyName("cep")]
         [MaxLength(8, ErrorMessage = "The max length is {1}")]
         [Required(ErrorMessage = "The field 'zipCode' is required", AllowEmptyStrings = false)]
-        public string Cep { get; set; }
+        public string ZipCode { get; set; }
 
         [JsonPropertyName("pontoDeReferencia")]
         [MaxLength(200, ErrorMessage = "The max length is {1}")]

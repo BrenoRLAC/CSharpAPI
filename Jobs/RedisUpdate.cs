@@ -26,8 +26,8 @@ namespace API.Jobs
 
         public async Task Run(PerformContext context)
         {
-            var heroes = await _heroDao.ListHero();                           
-            await _redisDao.setAsync(_configuration["Metadata:heroes"], heroes.ToJson());
+            var activeHeroes = await _heroDao.ListActiveHeroes();
+            await _redisDao.setAsync(_configuration["Metadata:activeHeroes"], activeHeroes.ToJson());
         }
     }
 

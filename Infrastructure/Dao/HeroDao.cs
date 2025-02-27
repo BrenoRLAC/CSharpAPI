@@ -9,6 +9,7 @@ using API.Domain.HeroImages;
 using API.Domain.Hero.AddressRequest;
 using API.Utilities;
 using API.Domain.Hero.AddressResults;
+using API.Domain.Hero.Addresses;
 namespace API.Infrastructure.Dao;
 
 public class HeroDao : IHeroDao
@@ -21,36 +22,56 @@ public class HeroDao : IHeroDao
     {
         _connectStr = config.GetConnectionString("Default");
     }
-    public async Task<List<HeroesResult>> ListHero()
+    public async Task<(List<HeroesResult>, int total)> ListHero(HeroFilter request)
     {
 
-        var hero = await Connection.QueryAsync<HeroesResult>("SP_LS_ALL_HEROES", commandType: CommandType.StoredProcedure);
+        const string procedure = "SP_LS_HEROES";
 
+        var p = new DynamicParameters();
+        p.Add("SEARCH", request.Search);
+        p.Add("PAGE", request.PageNumber);
+        p.Add("PAGINATION_SIZE", request.PageSize);
+        p.Add("TOTAL", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-        foreach (var item in hero)
+        var result = await Connection.QueryAsync<HeroesResult>(procedure, p, commandType: CommandType.StoredProcedure);
+
+        var total = p.Get<int>("TOTAL");
+       
+        var processedResult = result.Select(item =>
         {
-            item.Id.EncryptInt();
+            item.Id = int.Parse(item.Id).EncryptInt();
 
             if (!string.IsNullOrEmpty(item.heroImage))
-                item.heroImages = JsonConvert.DeserializeObject<List<HeroImage>>(item.heroImage);
+            {
+             
+                item.heroImages = JsonConvert.DeserializeObject<List<HeroImage>>(item.heroImage)
+                    .Select(image =>
+                    {
+                        if (!string.IsNullOrEmpty(image.PublicId))
+                        {
+                            image.PublicId = image.PublicId.Encrypt();
+                        }
+                        return image;
+                    })
+                    .ToList();
+            }
+            return item;
+        }).ToList();
 
-        }
+        return (processedResult, total);
 
-        return hero.ToList();
+
     }
-
-
-
-    public async Task<HeroResult> GetHeroById(string id)
+    public async Task<HeroResult> GetHeroDetail(string id)
     {
+        var hero = await Connection.QueryFirstOrDefaultAsync<HeroResult>("LIST_HERO_BY_ID", new { ID = id.DecryptInt() }, commandType: CommandType.StoredProcedure);
 
-        var hero = await Connection.QueryFirstOrDefaultAsync<HeroResult>("LIST_HERO_BY_ID", new { Id = id.DecryptInt() }, commandType: CommandType.StoredProcedure);
+        if (hero == null) return hero;
 
+        hero.Id = int.Parse(hero.Id).EncryptInt();
 
-        if (hero != null) hero.Id.EncryptInt();
         if (hero.HeroImage == null) return hero;
         hero.HeroImages = JsonConvert.DeserializeObject<List<HeroImage>>(hero.HeroImage);
-
 
         return hero;
 
@@ -78,7 +99,7 @@ public class HeroDao : IHeroDao
     }
 
     public async Task SetImage(string heroId, List<ImageUploadResult> image)
-    {        
+    {
         var images = new DataTable("TP_CODE");
 
         images.Columns.Add("PUBLIC_ID", typeof(string));
@@ -96,16 +117,16 @@ public class HeroDao : IHeroDao
 
     }
 
-    public async Task SetHeroAddress(string id, AddressRequest address)
+    public async Task SetHeroAddress(string id, Address address)
     {
 
-        await Connection.ExecuteAsync("INSERT_HERO_ADDRESS_AND_COMPLEMENT", new
+        await Connection.ExecuteAsync("INSERT_HERO_ADDRESS", new
         {
             HERO_ID = id.DecryptInt(),
             address.State,
             address.City,
             address.Neighborhood,
-            address.Cep,
+            address.ZipCode,
             address.Street,
             address.Country,
             address.Number,
@@ -113,14 +134,14 @@ public class HeroDao : IHeroDao
             address.ReferencePoint
         }, commandType: CommandType.StoredProcedure);
 
-
     }
 
     public async Task UpdateHero(string heroId, HeroRequest hero)
     {
+
         await Connection.ExecuteAsync("UPDATE_HERO", new
         {
-            heroId,
+            id = heroId.DecryptInt(),
             hero.Name,
             hero.DisguiseName,
             hero.Description
@@ -133,24 +154,45 @@ public class HeroDao : IHeroDao
     {
         await Connection.ExecuteAsync("DELETE_HERO", new
         {
-            id
+            ID  = id.DecryptInt()
 
         }, commandType: CommandType.StoredProcedure);
     }
 
-    public async Task<string> ValidateHero(HeroRequest hero)
+    public async Task UpdateHeroAddress(string heroId, AddressRequest address)
     {
-
-        var id = await Connection.QueryFirstOrDefaultAsync<int>("VALIDATE_HERO", new
+        await Connection.ExecuteAsync("UPDATE_HERO_ADDRESS", new
         {
-            hero.Name,
-            hero.DisguiseName,
-            hero.Description
-
-
+            HERO_ID = heroId.DecryptInt(),
+            address.State,
+            address.City,
+            address.Neighborhood,
+            address.ZipCode,
+            address.Street,
+            address.Country,
+            address.Number,
+            address.Complement,
+            address.ReferencePoint
         }, commandType: CommandType.StoredProcedure);
 
-        return id.EncryptInt();
+    }
+
+    public async Task DeleteHeroImage(string heroId, string imageId)
+    {
+                await Connection.ExecuteAsync("DELETE_HERO_IMAGE", new
+            {
+                HEROID = heroId.DecryptInt(),
+                IMAGEID = imageId.Decrypt()
+
+            }, commandType: CommandType.StoredProcedure);     
+    }
+
+
+    public async Task<int> ListActiveHeroes()
+    {
+
+        return await Connection.QueryFirstOrDefaultAsync<int>("LIST_ACTIVE_HEROES", commandType: CommandType.StoredProcedure);
+
     }
 }
 

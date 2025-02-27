@@ -1,8 +1,9 @@
-﻿using API.Domain.Hero;
+﻿using API.Controllers;
+using API.Domain.Hero;
 using API.Domain.Hero.Addresses;
 using API.Domain.Hero.AddressRequest;
 using API.Domain.Hero.AddressResults;
-using API.Domain.HeroImages;
+using API.Domain.Pagination;
 using API.Infrastructure.Interface;
 using API.Utilities;
 using CloudinaryDotNet.Actions;
@@ -17,41 +18,37 @@ namespace API.Infrastructure.Service
         {
             _dao = dao;
         }
-        public Task<List<HeroesResult>> ListHero()
+        public async Task<(List<HeroesResult>, int total)> ListHero(HeroFilter request)
         {
-            return _dao.ListHero();
+            var (result, total) = await _dao.ListHero(request);
+
+            return (result, total);
+
         }
-        public Task<HeroResult> GetHeroById(string id)
+        public Task<HeroResult> GetHeroDetail(string id)
         {
-            return _dao.GetHeroById(id);
+            return _dao.GetHeroDetail(id);
         }
 
         public async Task SetHero(HeroRequest hero)
         {
 
-            var heroData = await _dao.ValidateHero(hero);
-            
-            if (heroData != 0.EncryptInt())
-            {               
-                throw new ArgumentException("Hero already exists.");
-            }
-
-           await _dao.SetHero(hero);
+            await _dao.SetHero(hero);
 
         }
 
-        public Task SetImage(string heroId, List<ImageUploadResult> image)
+        public async Task SetImage(string heroId, List<ImageUploadResult> image)
         {
-            return _dao.SetImage(heroId, image);
+            await _dao.SetImage(heroId, image);
         }
 
-        public Task SetHeroAddress(string id, AddressRequest address)
+        public async Task SetHeroAddress(string id, Address address)
         {
-            return _dao.SetHeroAddress(id, address);
+            await _dao.SetHeroAddress(id, address);
         }
+
         public async Task UpdateHero(string heroId, HeroRequest hero)
         {
-
             await _dao.UpdateHero(heroId, hero);
 
         }
@@ -65,9 +62,14 @@ namespace API.Infrastructure.Service
             return _dao.GetHeroAddress(heroId);
         }
 
-        //public Task<HeroResult> ValidateHero(HeroRequest hero)
-        //{
-        //    return _dao.ValidateHero(hero);
-        //}
+        public Task UpdateHeroAddress(string heroId, AddressRequest address)
+        {
+            return _dao.UpdateHeroAddress(heroId, address);
+        }
+
+        public Task DeleteHeroImage(string heroId, string imageId)
+        {
+            return _dao.DeleteHeroImage(heroId, imageId);
+        }
     }
 }

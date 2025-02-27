@@ -27,14 +27,11 @@ namespace API.Infrastructure.Service
             
             var content = await response.Content.ReadFromJsonAsync<Address>();
 
-            if (content.Cep == null) return null;
+            if (content.ZipCode == null) return null;
 
             return content;
         }
-
-           
-
-
+       
     }
 }
 

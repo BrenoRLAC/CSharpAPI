@@ -2,14 +2,15 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using CloudinaryServiceInterface.Infrastructure;
+using System.Reflection.Metadata;
 
 
 namespace CloudinaryServices.Infrastructure
-{   
+{
     public class CloudinaryService : ICloudinaryService
     {
         private readonly Cloudinary _cloudinary;
-       
+
         public CloudinaryService(IConfiguration configuration)
         {
 
@@ -49,5 +50,12 @@ namespace CloudinaryServices.Infrastructure
             return results;
         }
 
+        public async Task<DeletionResult> DeleteImage(string imageId)
+        {
+            var deletionParams = new DeletionParams(imageId);
+            var deletionResult = await _cloudinary.DestroyAsync(deletionParams);
+            return deletionResult;
+
+        }
     }
 }

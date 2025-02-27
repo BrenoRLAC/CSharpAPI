@@ -2,13 +2,13 @@ using API.Domain.Notification;
 using API.Infrastructure;
 using API.Infrastructure.Dao;
 using API.Infrastructure.Interface;
+using API.Infrastructure.Service;
 using API.Jobs;
 using API.Middleware;
-using API.Service;
 using API.Utilities;
+using CloudinaryServiceInterface.Infrastructure;
+using CloudinaryServices.Infrastructure;
 using Hangfire;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
 using RabbitMQ.Client;
 using StackExchange.Redis;
 
@@ -31,8 +31,10 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddHttpClient();
 builder.Services.AddTransient<IHeroDao, HeroDao>();
 builder.Services.AddTransient<IHeroService, HeroService>();
+builder.Services.AddTransient<IAddressService, AddressService>();
 builder.Services.AddTransient<IRedisUpdate, RedisUpdate>();
 builder.Services.AddTransient<IRedisDao, RedisDao>();
 builder.Services.AddTransient<INotificationHub, NotificationHub>();
@@ -40,9 +42,6 @@ builder.Services.AddSignalR();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-
-
 
 
 builder.Services.AddHangfire(x => x.UseSqlServerStorage(builder.Configuration.GetConnectionString("Default")));
@@ -64,6 +63,7 @@ var rabbitFactory = new ConnectionFactory
 var rabbitClient = new RabbitClient(rabbitFactory);
 
 builder.Services.AddSingleton<IRabbitClient>(rabbitClient);
+builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
 builder.Services.AddHostedService<RabbitListener>();
 
 
@@ -89,25 +89,14 @@ var recurringJobManager = app.Services.GetRequiredService<IRecurringJobManager>(
 
 recurringJobManager.AddOrUpdate<IRedisUpdate>("tempHeroes", x => x.Run(null), cronExpression: builder.Configuration["Intervals:IHeroesUpdate"]);
 
-
 var notif = new NotificationRequest()
 {
     ReturnUsers = new List<(string, string)>()
-    {       
-       (34.EncryptInt(), "Usuario")      
+    {
+       (34.EncryptInt(), "Usuario")
     },
 
 };
-
-string a = 34.EncryptInt();
-string b = 34.EncryptInt();
-
-int c = a.DecryptInt();
-int d = b.DecryptInt();
-
-if (a == b)
-
-  //RecurringJob.AddOrUpdate(() => StringExtensions.test(), cronExpression: builder.Configuration["Intervals:IHeroNotification"]);
 
 recurringJobManager.AddOrUpdate<IRabbitClient>("rabbit", x => x.SendMessage(notif), cronExpression: builder.Configuration["Intervals:IHeroNotification"]);
 

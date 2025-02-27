@@ -1,7 +1,7 @@
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
-using JsonIgnoreAttribute = System.Text.Json.Serialization.JsonIgnoreAttribute;
+using JsonIgnoreAttribute = Newtonsoft.Json.JsonIgnoreAttribute;
 
 namespace API.Domain.Hero.Addresses
 {
@@ -25,7 +25,7 @@ namespace API.Domain.Hero.Addresses
         [JsonPropertyName("cep")]
         [MaxLength(8, ErrorMessage = "The max length is {1}")]
         [Required(ErrorMessage = "The field 'zipCode' is required", AllowEmptyStrings = false)]
-        public string Cep { get; set; }
+        public string ZipCode { get; set; }
 
         [JsonPropertyName("pontoDeReferencia")]
         [MaxLength(200, ErrorMessage = "The max length is {1}")]
@@ -49,9 +49,7 @@ namespace API.Domain.Hero.Addresses
         [JsonPropertyName("pais")]
         [Required(ErrorMessage = "The field 'country' is required", AllowEmptyStrings = false)]
         public string Country { get; set; } = "BRASIL";
-
-        //[JsonIgnore]
-        //public int NeighborhoodInsidecode { get; set; }
+        
 
     }
 }

@@ -1,15 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using API.Domain.Pagination;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 
 namespace API.Domain.Hero
 {
     public class HeroRequest
-    {
-
- 
-        //[JsonPropertyName("id")]
-        //[JsonIgnore] public string Id { get; set; }
+    {  
 
         [JsonPropertyName("name")]       
         [Required(ErrorMessage = "Campo nome é obrigatório!")]
