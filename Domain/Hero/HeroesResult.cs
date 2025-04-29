@@ -1,20 +1,20 @@
 ﻿
 using API.Domain.HeroImages;
 
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace API.Domain.Hero
 {
     public class HeroesResult
     {
-        [JsonProperty("id")] public string Id { get; set; }
-        [JsonProperty("name")] public string Name { get; set; }
-        [JsonProperty("description")] public string Description { get; set; }
-        [JsonProperty("disguiseName")] public string DisguiseName { get; set; }
+        [JsonPropertyName("id")] public string Id { get; set; }
+        [JsonPropertyName("name")] public string Name { get; set; }
+        [JsonPropertyName("description")] public string Description { get; set; }
+        [JsonPropertyName("disguise")] public string Disguise { get; set; }
 
-        public List<HeroImage> heroImages { get; set; }
+        public List<HeroImage> Images { get; set; }
 
-        internal string heroImage { get; set; }
+        internal string Image { get; set; }
 
     }
 }

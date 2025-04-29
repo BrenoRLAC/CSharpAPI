@@ -41,10 +41,10 @@ public class HeroDao : IHeroDao
         {
             item.Id = int.Parse(item.Id).EncryptInt();
 
-            if (!string.IsNullOrEmpty(item.heroImage))
+            if (!string.IsNullOrEmpty(item.Image))
             {
              
-                item.heroImages = JsonConvert.DeserializeObject<List<HeroImage>>(item.heroImage)
+                item.Images = JsonConvert.DeserializeObject<List<HeroImage>>(item.Image)
                     .Select(image =>
                     {
                         if (!string.IsNullOrEmpty(image.PublicId))
@@ -70,11 +70,21 @@ public class HeroDao : IHeroDao
 
         hero.Id = int.Parse(hero.Id).EncryptInt();
 
-        if (hero.HeroImage == null) return hero;
-        hero.HeroImages = JsonConvert.DeserializeObject<List<HeroImage>>(hero.HeroImage);
-
+        if (hero.Image == null) return hero;
+        if (!string.IsNullOrEmpty(hero.Image))
+        {
+            hero.Images = JsonConvert.DeserializeObject<List<HeroImage>>(hero.Image)
+                .Select(image =>
+                {
+                    if (!string.IsNullOrEmpty(image.PublicId))
+                    {
+                        image.PublicId = image.PublicId.Encrypt();
+                    }
+                    return image;
+                })
+                .ToList();
+        }
         return hero;
-
     }
 
     public async Task<AddressResult> GetHeroAddress(string heroId)
@@ -91,21 +101,21 @@ public class HeroDao : IHeroDao
         await Connection.ExecuteAsync("INSERT_HERO", new
         {
             hero.Name,
-            hero.DisguiseName,
+            hero.Disguise,
             hero.Description,
 
         }, commandType: CommandType.StoredProcedure);
 
     }
 
-    public async Task SetImage(string heroId, List<ImageUploadResult> image)
+    public async Task SetImage(string heroId, ImageUploadResult image)
     {
         var images = new DataTable("TP_CODE");
 
         images.Columns.Add("PUBLIC_ID", typeof(string));
         images.Columns.Add("URL", typeof(string));
 
-        image?.ForEach(x => images.Rows.Add(x.PublicId, x.SecureUrl));
+        images.Rows.Add(image.PublicId, image.SecureUrl);
 
 
         await Connection.QueryFirstOrDefaultAsync<object>("INSERT_HERO_IMAGE", new
@@ -143,7 +153,7 @@ public class HeroDao : IHeroDao
         {
             id = heroId.DecryptInt(),
             hero.Name,
-            hero.DisguiseName,
+            hero.Disguise,
             hero.Description
 
 
@@ -187,7 +197,7 @@ public class HeroDao : IHeroDao
             }, commandType: CommandType.StoredProcedure);     
     }
 
-
+        
     public async Task<int> ListActiveHeroes()
     {
 

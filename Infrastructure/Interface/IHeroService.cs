@@ -15,7 +15,7 @@ namespace API.Infrastructure.Interface
         Task<HeroResult> GetHeroDetail(string heroId);
         Task<AddressResult> GetHeroAddress(string heroId);       
         Task SetHero(HeroRequest hero);
-        Task SetImage(string heroId, List<ImageUploadResult> image);
+        Task SetImage(string heroId, ImageUploadResult image);
         Task SetHeroAddress(string id, Address address);
         Task UpdateHero(string heroId, HeroRequest hero);
         Task DeleteHero(string id);

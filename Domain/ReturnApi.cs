@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace API.Domain
 {
@@ -21,17 +21,17 @@ namespace API.Domain
         }
 
 
-        [JsonProperty("success")]
+        [JsonPropertyName("success")]
         public bool Success => StatusCode is >= 200 and <= 299;
 
-        [JsonProperty("statusCode")]
+        [JsonPropertyName("statusCode")]
         public int StatusCode { get; set; }
 
-        [JsonProperty("code")] public string Code { get; set; }
+        [JsonPropertyName("code")] public string Code { get; set; }
 
-        [JsonProperty("message")] public string Message { get; set; }
+        [JsonPropertyName("message")] public string Message { get; set; }
 
-        [JsonProperty("data")] public T Data { get; set; }
+        [JsonPropertyName("data")] public T Data { get; set; }
 
     }
 }

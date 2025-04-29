@@ -1,14 +1,12 @@
-﻿using System.Collections.Generic;
-using Newtonsoft.Json;
-
+﻿using System.Text.Json.Serialization;
 namespace API.Domain.Notification
 {
     public class NotificationResult
     {
-        [JsonProperty("all")]
+        [JsonPropertyName("all")]
         public List<NotificationData> All { get; set; }
 
-        [JsonProperty("unread")]
+        [JsonPropertyName("unread")]
         public List<NotificationData> UnRead { get; set; }
     }
 }

@@ -24,30 +24,25 @@ namespace CloudinaryServices.Infrastructure
 
         }
 
-        public List<ImageUploadResult> UploadImages(List<IFormFile> files)
+        public ImageUploadResult UploadImages(IFormFile file)
         {
-            var results = new List<ImageUploadResult>();
+            var result = new ImageUploadResult();
 
-            foreach (var file in files)
+            var uploadParams = new ImageUploadParams()
             {
-                var uploadParams = new ImageUploadParams()
-                {
-                    File = new FileDescription(file.FileName, file.OpenReadStream())
-                };
+                File = new FileDescription(file.FileName, file.OpenReadStream())
+            };
 
-                var uploadResult = _cloudinary.Upload(uploadParams);
+            var uploadResult = _cloudinary.Upload(uploadParams);
 
-                if (uploadResult != null)
-                {
-                    results.Add(new ImageUploadResult
-                    {
-                        PublicId = uploadResult.PublicId,
-                        SecureUrl = uploadResult.SecureUrl
-                    });
-                }
+            if (uploadResult != null)
+            {
+                result.PublicId = uploadResult.PublicId;
+                result.SecureUrl = uploadResult.SecureUrl;
+                              
             }
 
-            return results;
+            return result;
         }
 
         public async Task<DeletionResult> DeleteImage(string imageId)

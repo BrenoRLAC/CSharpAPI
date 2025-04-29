@@ -25,7 +25,7 @@ public class Hero : ControllerBase
     private readonly ICloudinaryService _cloudinaryService;
 
 
-    [HttpGet, Route("AllHeroes"), Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApiPaged<List<HeroResult>>))]
+    [HttpGet, Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApiPaged<List<HeroResult>>))]
     public async Task<IActionResult> GetHeroes([FromQuery] HeroFilter request)
     {
         Pagination.ConfigPagination(request);
@@ -42,16 +42,16 @@ public class Hero : ControllerBase
     }
 
 
-    [HttpGet("HeroById/"), Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApi<HeroResult>))]
-    public async Task<IActionResult> GetHero([FromQuery] string heroId)
+    [HttpGet("{id}"), Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApi<HeroResult>))]
+    public async Task<IActionResult> GetHero([FromRoute] string id)
     {
-        var hero = await _heroService.GetHeroDetail(heroId);
+        var hero = await _heroService.GetHeroDetail(id);
 
         if (hero is null)
             return BadRequest(new ReturnApi<HeroResult>(400, "This Hero does not exist"));
 
 
-        var address = await _heroService.GetHeroAddress(heroId);
+        var address = await _heroService.GetHeroAddress(id);
 
         hero.AddressResult = address;
 
@@ -78,13 +78,13 @@ public class Hero : ControllerBase
 
     }
 
-    [HttpPost("HeroImage/"), Produces("application/json", Type = typeof(ReturnApi<object>))]
-    public async Task<IActionResult> SetHeroImage([FromQuery] string heroId, List<IFormFile> images)
+    [HttpPost("HeroImage/{id}"), Produces("application/json", Type = typeof(ReturnApi<object>))]
+    public async Task<IActionResult> SetHeroImage([FromRoute] string id, IFormFile images)
     {
 
         try
         {
-            if (images == null || images.Count == 0) return BadRequest(new ReturnApi<object>(400, "Add at least one image"));
+            if (images == null) return BadRequest(new ReturnApi<object>(400, "Add at least one image"));
 
 
             var image = _cloudinaryService.UploadImages(images);
@@ -93,7 +93,7 @@ public class Hero : ControllerBase
                 return BadRequest(new ReturnApi<HeroResult>(400, "There is a problem while uploading the image of the hero"));
 
          
-            await _heroService.SetImage(heroId, image);
+            await _heroService.SetImage(id, image);
 
             return Ok(new ReturnApi<object>(201, "Hero's image added successfully"));
         }
@@ -103,8 +103,8 @@ public class Hero : ControllerBase
         }
     }
 
-    [HttpPost, Route("HeroAddress"), Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApi<object>))]
-    public async Task<IActionResult> SetHeroAddress(string heroId, [FromBody] AddressRequest address)
+    [HttpPost, Route("HeroAddress/{id}"), Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApi<object>))]
+    public async Task<IActionResult> SetHeroAddress([FromRoute]string id, [FromBody] AddressRequest address)
     {
         try
         {
@@ -125,7 +125,7 @@ public class Hero : ControllerBase
             addressValidation.Complement = address.Complement;
             addressValidation.ReferencePoint = address.ReferencePoint;
 
-            await _heroService.SetHeroAddress(heroId, addressValidation);
+            await _heroService.SetHeroAddress(id, addressValidation);
 
             return Ok(new ReturnApi<object>(200, "Hero added successfully"));
         }
@@ -136,8 +136,8 @@ public class Hero : ControllerBase
     }
 
 
-    [HttpPut, Route("UpdateHeroAddress"), Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApi<object>))]
-    public async Task<IActionResult> UpdateHeroAddress(string heroId, [FromBody] AddressRequest address)
+    [HttpPut, Route("UpdateAddress/{id}"), Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApi<object>))]
+    public async Task<IActionResult> UpdateHeroAddress([FromRoute] string id, [FromBody] AddressRequest address)
     {
         try
         {
@@ -153,7 +153,7 @@ public class Hero : ControllerBase
                 return BadRequest(string.Join("\n", errors));
             }
           
-            await _heroService.UpdateHeroAddress(heroId, address);
+            await _heroService.UpdateHeroAddress(id, address);
 
             return Ok(new ReturnApi<object>(200, "Address updated successfully"));
         }
@@ -164,9 +164,9 @@ public class Hero : ControllerBase
         }
     }
 
-    [HttpPut("{id}")]
-    [Produces("application/json", Type = typeof(ReturnApi<object>))]
-    public async Task<IActionResult> UpdateHero(string id, HeroRequest hero)
+    
+    [HttpPut, Route("UpdateHero/{id}"), Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApi<object>))]
+    public async Task<IActionResult> UpdateHero([FromRoute]string id, [FromBody]HeroRequest hero)
     {
         try
         {
@@ -182,10 +182,10 @@ public class Hero : ControllerBase
 
     }
 
-    [HttpDelete("deleteHero")]
+    [HttpDelete("{id}")]
     [Consumes("application/json")]
     [Produces("application/json", Type = typeof(ReturnApi<object>))]
-    public async Task<IActionResult> DeleteHero([FromQuery] string id)
+    public async Task<IActionResult> DeleteHero([FromRoute] string id)
     {
         try
         {
@@ -200,14 +200,14 @@ public class Hero : ControllerBase
 
     }
 
-    [HttpDelete("deleteImage/")]
+    [HttpDelete("{id}/image/{imageId}")]
     [Consumes("application/json")]
     [Produces("application/json", Type = typeof(ReturnApi<object>))]
-    public async Task<IActionResult> DeleteHeroImage([FromQuery] string heroId, [FromQuery] string imageId)
+    public async Task<IActionResult> DeleteHeroImage([FromRoute] string id, [FromRoute] string imageId)
     {
         try
         {
-            await _heroService.DeleteHeroImage(heroId, imageId);
+            await _heroService.DeleteHeroImage(id, imageId);
 
             var image = await _cloudinaryService.DeleteImage(imageId);
 

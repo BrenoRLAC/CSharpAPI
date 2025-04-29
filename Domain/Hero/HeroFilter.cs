@@ -1,13 +1,10 @@
-﻿using API.Domain.Hero.AddressResults;
-using API.Domain.HeroImages;
-using API.Domain.Pagination;
-using Newtonsoft.Json;
-
+﻿using API.Domain.Pagination;
+using System.Text.Json.Serialization;
 namespace API.Domain.Hero
 {
     public class HeroFilter : PaginationRequest
     {
-        [JsonProperty("name")] public string? Search { get; set; }
+        [JsonPropertyName("name")] public string? Search { get; set; }
     
 
     }

@@ -1,19 +1,20 @@
 ﻿using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace API.Domain.Pagination
 {
     public class PaginationResult: Pagination
     {
-        [JsonProperty("totalPages")]
+        [JsonPropertyName("totalPages")]
         public int TotalPages { get; set; }
 
-        [JsonProperty("totalReg")]
+        [JsonPropertyName("totalReg")]
         public int TotalReg { get; set; }
 
-        [JsonProperty("nextPage")]
+        [JsonPropertyName("nextPage")]
         public string NextPage { get; set; }
         
-        [JsonProperty("prevPage")]
+        [JsonPropertyName("prevPage")]
         public string PrevPage { get; set; }
     }
 }

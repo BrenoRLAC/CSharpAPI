@@ -1,5 +1,5 @@
 ﻿using API.Domain.Pagination;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace API.Domain
 {
@@ -36,15 +36,15 @@ namespace API.Domain
         }
 
 
-        [JsonProperty("success")] public bool Success => StatusCode is >= 200 and <= 299;
+        [JsonPropertyName("success")] public bool Success => StatusCode is >= 200 and <= 299;
 
-        [JsonProperty("statusCode")] public int StatusCode { get; set; }
+        [JsonPropertyName("statusCode")] public int StatusCode { get; set; }
 
-        [JsonProperty("message")] public string Message { get; set; }
+        [JsonPropertyName("message")] public string Message { get; set; }
 
-        [JsonProperty("data")] public T Data { get; set; }
+        [JsonPropertyName("data")] public T Data { get; set; }
 
-        [JsonProperty("pagination")] public PaginationResult PaginationResult { get; set; }
+        [JsonPropertyName("pagination")] public PaginationResult PaginationResult { get; set; }
 
         public bool ShouldSerializeMessage() => !string.IsNullOrEmpty(Message);
 

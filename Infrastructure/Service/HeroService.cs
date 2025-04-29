@@ -37,7 +37,7 @@ namespace API.Infrastructure.Service
 
         }
 
-        public async Task SetImage(string heroId, List<ImageUploadResult> image)
+        public async Task SetImage(string heroId, ImageUploadResult image)
         {
             await _dao.SetImage(heroId, image);
         }

@@ -1,14 +1,14 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace API.Domain.Pagination
 {
     public class Pagination
     {
               
-        [JsonProperty("pageNumber")]
+        [JsonPropertyName("pageNumber")]
         public int? PageNumber { get; set; } = 1;
 
-        [JsonProperty("pageSize")]
+        [JsonPropertyName("pageSize")]
         public int? PageSize { get; set; } = 10;
     
         public static void ConfigPagination(PaginationRequest request)

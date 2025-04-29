@@ -1,13 +1,13 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace API.Domain.Notification
 {
     public class NotificationRequest
     {
-        [JsonProperty("title")]
+        [JsonPropertyName("title")]
         public string Title { get; set; }
 
-        [JsonProperty("contentMessage")]
+        [JsonPropertyName("contentMessage")]
         public string ContentMessage { get; set; }                    
         public List<(string, string)> ReturnUsers { get; set; }
     }

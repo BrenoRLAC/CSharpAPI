@@ -5,31 +5,31 @@ namespace API.Domain.Hero.AddressResults
 {
     public class AddressResult
     {
-        [JsonProperty("state")]
+        [JsonPropertyName("state")]
         public string State { get; set; }
 
-        [JsonProperty("city")]
+        [JsonPropertyName("city")]
         public string City { get; set; }
 
-        [JsonProperty("neighborhood")]
+        [JsonPropertyName("neighborhood")]
         public string Neighborhood { get; set; }
 
-        [JsonProperty("zipcode")]
+        [JsonPropertyName("zipcode")]
         public string ZipCode { get; set; }
 
-        [JsonProperty("street")]
+        [JsonPropertyName("street")]
         public string Street { get; set; }
 
-        [JsonProperty("country")]
+        [JsonPropertyName("country")]
         public string Country { get; set; }
 
-        [JsonProperty("number")]
+        [JsonPropertyName("number")]
         public string Number { get; set; }
 
-        [JsonProperty("complement")]
+        [JsonPropertyName("complement")]
         public string Complement { get; set; }
 
-        [JsonProperty("referencepoint")]
+        [JsonPropertyName("referencepoint")]
         public string ReferencePoint { get; set; }
 
     }
