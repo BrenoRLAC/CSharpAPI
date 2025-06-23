@@ -1,9 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
-using CloudinaryDotNet;
+﻿using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using CloudinaryServiceInterface.Infrastructure;
-using System.Reflection.Metadata;
-
 
 namespace CloudinaryServices.Infrastructure
 {
@@ -35,12 +32,14 @@ namespace CloudinaryServices.Infrastructure
 
             var uploadResult = _cloudinary.Upload(uploadParams);
 
-            if (uploadResult != null)
+
+            if (!string.IsNullOrEmpty(uploadResult.Error?.Message))
             {
-                result.PublicId = uploadResult.PublicId;
-                result.SecureUrl = uploadResult.SecureUrl;
-                              
+                throw new Exception(uploadResult.Error.Message);
             }
+
+            result.PublicId = uploadResult.PublicId;
+            result.SecureUrl = uploadResult.SecureUrl;
 
             return result;
         }

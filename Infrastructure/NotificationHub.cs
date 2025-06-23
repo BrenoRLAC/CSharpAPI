@@ -30,7 +30,7 @@ namespace API.Infrastructure
                     Application = context.Request.Headers["Host"],
                     Environment = context.Request.Headers["Origin"],
                     ConnectionId = Context.ConnectionId,
-                  CodUser = codUser.EncryptInt()
+                    CodUser = codUser.EncryptInt()
                 });
             }
 

@@ -11,9 +11,7 @@ namespace API.Domain.Hero
         [JsonPropertyName("name")] public string Name { get; set; }
         [JsonPropertyName("description")] public string Description { get; set; }
         [JsonPropertyName("disguise")] public string Disguise { get; set; }
-
         public List<HeroImage> Images { get; set; }
-
         internal string Image { get; set; }
 
     }

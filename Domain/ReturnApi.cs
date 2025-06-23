@@ -20,6 +20,12 @@ namespace API.Domain
             Message = message;
         }
 
+        public ReturnApi(int status, string message, T data)
+        {
+            StatusCode = status;
+            Message = message;
+            Data = data;
+        }
 
         [JsonPropertyName("success")]
         public bool Success => StatusCode is >= 200 and <= 299;

@@ -12,16 +12,12 @@ using API.Domain.Hero.AddressResults;
 using API.Domain.Hero.Addresses;
 namespace API.Infrastructure.Dao;
 
-public class HeroDao : IHeroDao
+public class HeroDao(IConfiguration config) : IHeroDao
 {
-    private readonly string _connectStr;
+    private readonly string _connectStr = config.GetConnectionString("Default");
     private SqlConnection _connection;
     private SqlConnection Connection => _connection ??= new SqlConnection(_connectStr);
 
-    public HeroDao(IConfiguration config)
-    {
-        _connectStr = config.GetConnectionString("Default");
-    }
     public async Task<(List<HeroesResult>, int total)> ListHero(HeroFilter request)
     {
 
@@ -36,14 +32,14 @@ public class HeroDao : IHeroDao
         var result = await Connection.QueryAsync<HeroesResult>(procedure, p, commandType: CommandType.StoredProcedure);
 
         var total = p.Get<int>("TOTAL");
-       
+
         var processedResult = result.Select(item =>
         {
             item.Id = int.Parse(item.Id).EncryptInt();
 
             if (!string.IsNullOrEmpty(item.Image))
             {
-             
+
                 item.Images = JsonConvert.DeserializeObject<List<HeroImage>>(item.Image)
                     .Select(image =>
                     {
@@ -164,7 +160,7 @@ public class HeroDao : IHeroDao
     {
         await Connection.ExecuteAsync("DELETE_HERO", new
         {
-            ID  = id.DecryptInt()
+            ID = id.DecryptInt()
 
         }, commandType: CommandType.StoredProcedure);
     }
@@ -189,18 +185,17 @@ public class HeroDao : IHeroDao
 
     public async Task DeleteHeroImage(string heroId, string imageId)
     {
-                await Connection.ExecuteAsync("DELETE_HERO_IMAGE", new
-            {
-                HEROID = heroId.DecryptInt(),
-                IMAGEID = imageId.Decrypt()
+        await Connection.ExecuteAsync("DELETE_HERO_IMAGE", new
+        {
+            HEROID = heroId.DecryptInt(),
+            IMAGEID = imageId.Decrypt()
 
-            }, commandType: CommandType.StoredProcedure);     
+        }, commandType: CommandType.StoredProcedure);
     }
 
-        
+
     public async Task<int> ListActiveHeroes()
     {
-
         return await Connection.QueryFirstOrDefaultAsync<int>("LIST_ACTIVE_HEROES", commandType: CommandType.StoredProcedure);
 
     }

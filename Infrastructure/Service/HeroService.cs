@@ -1,11 +1,8 @@
-﻿using API.Controllers;
-using API.Domain.Hero;
+﻿using API.Domain.Hero;
 using API.Domain.Hero.Addresses;
 using API.Domain.Hero.AddressRequest;
 using API.Domain.Hero.AddressResults;
-using API.Domain.Pagination;
 using API.Infrastructure.Interface;
-using API.Utilities;
 using CloudinaryDotNet.Actions;
 
 namespace API.Infrastructure.Service
@@ -23,7 +20,6 @@ namespace API.Infrastructure.Service
             var (result, total) = await _dao.ListHero(request);
 
             return (result, total);
-
         }
         public Task<HeroResult> GetHeroDetail(string id)
         {
@@ -32,9 +28,7 @@ namespace API.Infrastructure.Service
 
         public async Task SetHero(HeroRequest hero)
         {
-
             await _dao.SetHero(hero);
-
         }
 
         public async Task SetImage(string heroId, ImageUploadResult image)
@@ -50,7 +44,6 @@ namespace API.Infrastructure.Service
         public async Task UpdateHero(string heroId, HeroRequest hero)
         {
             await _dao.UpdateHero(heroId, hero);
-
         }
         public async Task DeleteHero(string id)
         {
