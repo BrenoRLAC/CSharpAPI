@@ -3,9 +3,11 @@ using API.Domain;
 using API.Domain.Notification;
 using API.Infrastructure.Interface;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.Authorization;
 
 namespace API.Infrastructure
 {
+    [Authorize]
     public class NotificationHub : Hub, INotificationHub
     {
         public static readonly List<UserSignalR> UsersSocket = new();
@@ -52,14 +54,14 @@ namespace API.Infrastructure
         }
 
         public async Task SendNotification(string codUser, NotificationData message)
-        {            
+        {
             var users = new List<UserSignalR>();
-             lock (UsersSocket)
+            lock (UsersSocket)
                 users.AddRange(UsersSocket.Where(x => x != null && x.CodUser == codUser));
 
             foreach (var user in users)
                 await _ctx.Clients.Client(user.ConnectionId).SendAsync("ReceiverNotification", message.ToJson());
         }
-        
+
     }
 }

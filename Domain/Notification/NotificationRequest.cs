@@ -8,7 +8,8 @@ namespace API.Domain.Notification
         public string Title { get; set; }
 
         [JsonPropertyName("contentMessage")]
-        public string ContentMessage { get; set; }                    
-        public List<(string, string)> ReturnUsers { get; set; }
+        public string ContentMessage { get; set; }
+        public string ClassStyle { get; set; }
+        public List<(string, string)> ReturnUsers { get; set; }    
     }
 }

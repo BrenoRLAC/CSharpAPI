@@ -1,10 +1,11 @@
-﻿using RabbitMQ.Client.Events;
-using RabbitMQ.Client;
-using Newtonsoft.Json;
-using System.Text;
-using API.Infrastructure.Interface;
+﻿using API.Domain;
 using API.Domain.Notification;
+using API.Infrastructure.Interface;
 using API.Utilities;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+using System.Text;
+using System.Text.Json;
 
 namespace API.Infrastructure
 {
@@ -68,14 +69,18 @@ namespace API.Infrastructure
                 var json = Encoding.UTF8.GetString(body.ToArray());
 
                 _logger.LogInformation("Mensagem recebida: {Message}", json);
-                var message = JsonConvert.DeserializeObject<NotificationRequest>(json);
+                var message = JsonSerializer.Deserialize<NotificationRequest>(json);
 
                 message?.ReturnUsers.ForEach(user =>
                 {
                     _hub.SendNotification(user.Item2,
                         new NotificationData
                         {
-                            Content = message.ContentMessage,                           
+                            Category = Enum.TryParse(message.ClassStyle,
+                                out CategoryMessage category)
+                                ? category
+                                : CategoryMessage.error,
+                            ContentMessage = message.ContentMessage,                            
                             Title = message.Title,
                             MessageId = user.Item1.DecryptInt(),
                         });

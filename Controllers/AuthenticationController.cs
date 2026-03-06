@@ -4,12 +4,12 @@ using API.Infrastructure.Interface;
 using API.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace API.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("user/[controller]")]
     public class AuthenticationController(IAuthService service, ILogger<AuthenticationController> logger, IMemoryCache cache) : ControllerBase
     {
         private readonly IAuthService _service = service;
@@ -37,8 +37,8 @@ namespace API.Controllers
             if (result.PasswordExpired)
             {
                 var tmp = Guid.NewGuid().ToString();
-                _cache.Set(tmp, JsonConvert.SerializeObject(request), TimeSpan.FromMinutes(20));
-                return StatusCode(241, new ReturnApi<LoginReset>(201, "Password expired, update it", new LoginReset { ResetPwdToken = tmp.EncryptCookie() }));              
+                _cache.Set(tmp, JsonSerializer.Serialize(request), TimeSpan.FromMinutes(20));
+                return StatusCode(241, new ReturnApi<LoginReset>(201, "Password expired, update it", new LoginReset { ResetPwdToken = tmp.EncryptCookie() }));
             }
 
             if (result.Temporary)
@@ -47,7 +47,7 @@ namespace API.Controllers
                     return BadRequest(new ReturnApi<object>(400, "Temporary Password Expired"));
 
                 var tmpTokenPassword = Guid.NewGuid().ToString();
-                _cache.Set(tmpTokenPassword, JsonConvert.SerializeObject(request), TimeSpan.FromMinutes(5));
+                _cache.Set(tmpTokenPassword, JsonSerializer.Serialize(request), TimeSpan.FromMinutes(5));
 
                 return StatusCode(200, new ReturnApi<LoginResetTemporary>(201, "Valid temporary password, update password", new LoginResetTemporary { data = new LoginReset { ResetPwdToken = tmpTokenPassword.EncryptCookie() } }));
             }
@@ -60,7 +60,7 @@ namespace API.Controllers
             };
 
             var tmpTokenSecondAuth = Guid.NewGuid().ToString();
-            _cache.Set(tmpTokenSecondAuth, JsonConvert.SerializeObject(secondAuthRequest), TimeSpan.FromMinutes(5));
+            _cache.Set(tmpTokenSecondAuth, JsonSerializer.Serialize(secondAuthRequest), TimeSpan.FromMinutes(5));
 
             try
             {
@@ -77,17 +77,15 @@ namespace API.Controllers
 
         }
 
-        [HttpPut, Route("reset-password")]
+        [HttpPut, Route("resetPassword")]
         [Consumes("application/json"), Produces("application/json", Type = typeof(ResetPasswordRequest))]
         [ProducesResponseType(typeof(ReturnApi<object>), 400)]
         [ProducesResponseType(typeof(ReturnApi<object>), 401)]
         [ProducesResponseType(typeof(ReturnApi<object>), 200)]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
-            request.CodUser = User.Identity.GetCodUser();
+            _logger.LogInformation("Request PUT /resetPassword {@Request}", request);
 
-            _logger.LogInformation("Request PUT /reset-password {@Request}", request.CodUser);
-          
             if (!request.ResetPwdToken.TryDecryptCookie(out string token))
                 return BadRequest(new ReturnApi<object>(400, "Invalid token"));
 
@@ -100,7 +98,7 @@ namespace API.Controllers
             if (!request.NewPassword.IsValidPassword(out string error))
                 return BadRequest(new ReturnApi<object>(400, error));
 
-            var auth = JsonConvert.DeserializeObject<AuthRequest>(authrequest);
+            var auth = JsonSerializer.Deserialize<AuthRequest>(authrequest);
 
             bool pwdRepeated = await _service.PwdRepeated(auth.Email, request.NewPassword);
             if (pwdRepeated)
@@ -113,13 +111,11 @@ namespace API.Controllers
             return Ok(new ReturnApi<object>(200, "Password updated successfully"));
         }
 
-        [Route("forgot-password")]
-        [HttpPost]
-        [Consumes("application/x-www-form-urlencoded")]
-        [Produces("application/json")]
-        public async Task<IActionResult> ForgotPassword([FromForm] ForgotPassword request)
+        [Route("forgotPassword")]
+        [HttpPut, Produces("application/json")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPassword request)
         {
-            _logger.LogInformation("[API] POST /Authentication/forgot-password {@Request}", request);
+            _logger.LogInformation("[API] POST /Authentication/forgotPassword {@Request}", request);
 
             var result = await _service.ForgotPassword(request);
 
@@ -129,13 +125,13 @@ namespace API.Controllers
             return Ok(new ReturnApi<object>(200, "Password reset link sent to your email"));
         }
 
-        [Route("second-authentication/{code}")]
+        [Route("secondAuthentication/{code}")]
         [HttpPost]
         [Consumes("application/x-www-form-urlencoded")]
         [Produces("application/json", Type = typeof(BearerToken))]
         public async Task<IActionResult> SecondAuthentication([FromForm] SecondAuthToken request, [FromRoute] string code)
         {
-            _logger.LogInformation("[HTTP] Request POST /Authentication/second-authentication/{code} {@Request}", code, request);
+            _logger.LogInformation("[HTTP] Request POST /Authentication/secondAuthentication/{code} {@Request}", code, request);
 
             if (!request.Token.TryDecryptCookie(out string tokenSecondAuth))
                 return BadRequest(new ReturnApi<object>(400, "Invalid token"));
@@ -143,7 +139,7 @@ namespace API.Controllers
             if (!_cache.TryGetValue(tokenSecondAuth, out string secondAuthRequest))
                 return BadRequest(new ReturnApi<object>(400, "Reset token expired"));
 
-            var secondAuth = JsonConvert.DeserializeObject<SecondAuthenticationRequest>(secondAuthRequest);
+            var secondAuth = JsonSerializer.Deserialize<SecondAuthenticationRequest>(secondAuthRequest);
 
             secondAuth.Code = code;
 
@@ -160,24 +156,23 @@ namespace API.Controllers
 
         }
 
-        [Route("resend-second-factor")]
+        [Route("resendSecondAuthentication")]
         [HttpPost]
         [Consumes("application/x-www-form-urlencoded")]
         [Produces("application/json", Type = typeof(object))]
         public async Task<IActionResult> ResendSecondAuthentication([FromForm] SecondAuthToken request)
         {
-            _logger.LogInformation("[HTTP] Request POST /Authentication/resend-second-factor {@Request}", request);
+            _logger.LogInformation("[HTTP] Request POST /Authentication/resendSecondAuthentication {@Request}", request);
 
-                if (!request.Token.TryDecryptCookie(out string tokenSecondAuth))
-                    return BadRequest(new ReturnApi<object>(400, "Invalid token"));
+            if (!request.Token.TryDecryptCookie(out string tokenSecondAuth))
+                return BadRequest(new ReturnApi<object>(400, "Invalid token"));
 
-                if (!_cache.TryGetValue(tokenSecondAuth, out string secondAuthRequest))
-                    return BadRequest(new ReturnApi<object>(400, "Reset token expired"));
+            if (!_cache.TryGetValue(tokenSecondAuth, out string secondAuthRequest))
+                return BadRequest(new ReturnApi<object>(400, "Reset token expired"));
 
+            var secondAuth = JsonSerializer.Deserialize<SecondAuthenticationRequest>(secondAuthRequest);
 
-                var secondAuth = JsonConvert.DeserializeObject<SecondAuthenticationRequest>(secondAuthRequest);
-
-                await _service.GenerateSecondAuth(secondAuth);
+            await _service.GenerateSecondAuth(secondAuth);
 
             return Ok(new ReturnApi<OkResult>(200, new OkResult()));
 

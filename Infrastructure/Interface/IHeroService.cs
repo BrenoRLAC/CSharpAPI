@@ -21,5 +21,6 @@ namespace API.Infrastructure.Interface
         Task DeleteHero(string id);
         Task UpdateHeroAddress(string heroId, AddressRequest address);
         Task DeleteHeroImage(string heroId, string imageId);
+        Task SetCompleteHero(CompleteHeroRequest request, ImageUploadResult imageResult);
     }
 }

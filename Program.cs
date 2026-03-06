@@ -48,6 +48,8 @@ builder.Services.AddCors(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddTransient<IHeroDao, HeroDao>();
 builder.Services.AddTransient<IHeroService, HeroService>();
+builder.Services.AddTransient<INotificationDao, NotificationDao>();
+builder.Services.AddTransient<INotificationService, NotificationService>();
 builder.Services.AddTransient<IAddressService, AddressService>();
 builder.Services.AddTransient<IAuthService, AuthService>();
 builder.Services.AddTransient<IAuthDao, AuthDao>();

@@ -4,25 +4,12 @@ using API.Utilities;
 
 namespace API.Jobs
 {
-    public class RedisUpdate : IRedisUpdate
+    public class RedisUpdate(IHeroDao heroDao, IRedisDao redisDao, IConfiguration configuration) : IRedisUpdate
     {
 
-        private readonly IHeroDao _heroDao;
-
-        private readonly IRedisDao _redisDao;
-        
-        private readonly IConfiguration _configuration;
-
-
-        public RedisUpdate(IHeroDao heroDao, IRedisDao redisDao, IConfiguration configuration)
-
-        {
-            _configuration = configuration;
-            _heroDao = heroDao;
-            _redisDao = redisDao;
-            
-        }
-
+        private readonly IHeroDao _heroDao = heroDao;
+        private readonly IRedisDao _redisDao = redisDao;      
+        private readonly IConfiguration _configuration = configuration;
 
         public async Task Run(PerformContext context)
         {

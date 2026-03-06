@@ -16,7 +16,7 @@ namespace API.Infrastructure.Dao
         private SqlConnection Connection => _connection ??= new SqlConnection(_connStr);
 
         public async Task<AuthResult> AccessApi(AuthRequest request)
-        {
+        {  
             const string proc = "SP_LOGIN_USER";
 
             var result = await Connection.QueryFirstOrDefaultAsync<AuthResult>(proc,
@@ -45,15 +45,15 @@ namespace API.Infrastructure.Dao
 
         public async Task ResetPassword(ResetPasswordRequest request, string email)
         {
-            const string proc = "SP_REG_USER_PASSWORD";
+                const string proc = "SP_REG_USER_PASSWORD";
 
-            request.NewPassword = request.NewPassword.PasswordEncryption();
+                request.NewPassword = request.NewPassword.PasswordEncryption();
 
-            await Connection.ExecuteAsync(proc, new
-            {
-                EMAIL = email,
-                PASSWORD = request.NewPassword
-            }, commandType: CommandType.StoredProcedure);
+                await Connection.ExecuteAsync(proc, new
+                {
+                    EMAIL = email,
+                    PASSWORD = request.NewPassword                    
+                }, commandType: CommandType.StoredProcedure);                                 
         }
 
         public async Task<List<PassHist>> PasswordHistory(int codUser)
@@ -75,21 +75,21 @@ namespace API.Infrastructure.Dao
             await Connection.ExecuteAsync(proc, new
             {
                 EMAIL = request.Email,
-                TEMPORARY = defaultPassword
+                PASSWORD = defaultPassword
 
             }, commandType: CommandType.StoredProcedure);
         }
 
         public async Task GenerateSecondAuth(SecondAuthenticationRequest request)
         {
-            const string proc = "SP_REGISTER_SECOND_FACTOR_PASS";
+                const string proc = "SP_REGISTER_SECOND_FACTOR_PASS";
 
-            await Connection.ExecuteAsync(proc, new
-            {
-                COD_USER = request.CodUser.DecryptInt(),
-                VALUE = request.Code,
-            }, commandType: CommandType.StoredProcedure);
-        }
+                await Connection.ExecuteAsync(proc, new
+                {
+                    COD_USER = request.CodUser.DecryptInt(),
+                    VALUE = request.Code,
+                }, commandType: CommandType.StoredProcedure);
+            }
 
         public async Task<AuthResult> SecondAuthentication(SecondAuthenticationRequest request)
         {

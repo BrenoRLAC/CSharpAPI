@@ -43,8 +43,8 @@ public class HeroController(IHeroService heroService, IAddressService addressSer
     }
 
 
-    [HttpGet("{id}"), AllowAnonymous, Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApi<HeroResult>))]
-    public async Task<IActionResult> GetHeroById([FromRoute] string id)
+    [HttpGet("heroes"), AllowAnonymous, Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApi<HeroResult>))]
+    public async Task<IActionResult> GetHeroById([FromQuery] string id)
     {
         var codUser = (User?.Identity?.IsAuthenticated ?? false)
        ? User.Identity.GetCodUser()
@@ -77,8 +77,8 @@ public class HeroController(IHeroService heroService, IAddressService addressSer
             return Ok(new ReturnApi<object>(201, "Hero added successfully"));
         }
 
-    [HttpPost("{id}/image"), Produces("application/json", Type = typeof(ReturnApi<object>))]
-    public async Task<IActionResult> SetHeroImage([FromRoute] string id, IFormFile images)
+    [HttpPost("image"), Produces("application/json", Type = typeof(ReturnApi<object>))]
+    public async Task<IActionResult> SetHeroImage([FromQuery] string id, IFormFile images)
     {
             var codUser = User.Identity.GetCodUser();
 
@@ -98,8 +98,8 @@ public class HeroController(IHeroService heroService, IAddressService addressSer
             return Ok(new ReturnApi<object>(201, "Hero's image added successfully"));
         }
 
-    [HttpPost, Route("{id}/address"), Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApi<object>))]
-    public async Task<IActionResult> SetHeroAddress([FromRoute] string id, [FromBody] AddressRequest address)
+    [HttpPost, Route("address"), Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApi<object>))]
+    public async Task<IActionResult> SetHeroAddress([FromQuery] string id, [FromBody] AddressRequest address)
     {
             var codUser = User.Identity.GetCodUser();
 
@@ -128,8 +128,8 @@ public class HeroController(IHeroService heroService, IAddressService addressSer
         }
 
 
-    [HttpPut, Route("{id}/address"), Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApi<object>))]
-    public async Task<IActionResult> UpdateHeroAddress([FromRoute] string id, [FromBody] AddressRequest address)
+    [HttpPut, Route("address"), Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApi<object>))]
+    public async Task<IActionResult> UpdateHeroAddress([FromQuery] string id, [FromBody] AddressRequest address)
     {
             var codUser = User.Identity.GetCodUser();
 
@@ -137,15 +137,8 @@ public class HeroController(IHeroService heroService, IAddressService addressSer
 
             var addressValidation = await _addressService.GetAddress(address.ZipCode);
 
-            var errors = new List<string>();
-
-            if (addressValidation == null)
-                errors.Add("Invalid Address");
-
-            if (errors.Count > 0)
-            {
-                return BadRequest(string.Join("\n", errors));
-            }
+        if(addressValidation is null) 
+        return BadRequest(new ReturnApi<AddressRequest>(400, "There is a problem with the hero ZipCode"));
 
             await _heroService.UpdateHeroAddress(id, address);
 
@@ -153,8 +146,8 @@ public class HeroController(IHeroService heroService, IAddressService addressSer
         }
 
 
-    [HttpPut, Route("{id}"), Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApi<object>))]
-    public async Task<IActionResult> UpdateHero([FromRoute] string id, [FromBody] HeroRequest hero)
+    [HttpPut, Consumes("application/json"), Produces("application/json", Type = typeof(ReturnApi<object>))]
+    public async Task<IActionResult> UpdateHero([FromQuery] string id, [FromBody] HeroRequest hero)
     {
             var codUser = User.Identity.GetCodUser();
 
@@ -166,10 +159,9 @@ public class HeroController(IHeroService heroService, IAddressService addressSer
 
     }
 
-    [HttpDelete("{id}")]
-    [Consumes("application/json")]
+    [HttpDelete]
     [Produces("application/json", Type = typeof(ReturnApi<object>))]
-    public async Task<IActionResult> DeleteHero([FromRoute] string id)
+    public async Task<IActionResult> DeleteHero([FromBody] string id)
     {
             var codUser = User.Identity.GetCodUser();
             _logger.LogInformation("Request DELETE /Hero/{Id} by User {CodUser}", id, codUser);
@@ -179,14 +171,14 @@ public class HeroController(IHeroService heroService, IAddressService addressSer
             return Ok(new ReturnApi<object>(200, "Hero deleted successfully"));
     }
 
-    [HttpDelete("{id}/image/{imageId}")]
+    [HttpDelete("image")]
     [Consumes("application/json")]
     [Produces("application/json", Type = typeof(ReturnApi<object>))]
-    public async Task<IActionResult> DeleteHeroImage([FromRoute] string id, [FromRoute] string imageId)
+    public async Task<IActionResult> DeleteHeroImage([FromQuery] string id, [FromQuery] string imageId)
     {
             var codUser = User.Identity.GetCodUser();
 
-            _logger.LogInformation("Request DELETE /Hero/{Id}/image/{ImageId} by User {CodUser}", id, imageId, codUser);
+        _logger.LogInformation("Request DELETE image/{ImageId} by User {CodUser}", id, imageId, codUser);
 
             await _heroService.DeleteHeroImage(id, imageId);
 
@@ -197,5 +189,30 @@ public class HeroController(IHeroService heroService, IAddressService addressSer
 
             return Ok(new ReturnApi<object>(201, "Hero's image deleted successfully"));
         }
+
+
+    [HttpPost("completehero"), AllowAnonymous, Consumes("multipart/form-data"), Produces("application/json", Type = typeof(ReturnApi<object>))]
+    public async Task<IActionResult> SetCompleteHero([FromForm] CompleteHeroRequest request)
+    {
+        var codUser = User.Identity.GetCodUser();
+        _logger.LogInformation("Request POST /Hero/complete {@Request} {@Obj}", request, codUser);
+
+        if (request.Image == null) return BadRequest(new ReturnApi<object>(400, "Add at least one image"));
+
+        var imageResult = _cloudinaryService.UploadImages(request.Image);
+
+        if (imageResult == null)
+            return BadRequest(new ReturnApi<string>(400, "There is a problem while uploading the image of the hero"));
+
+        var addressValidation = await _addressService.GetAddress(request.Address.ZipCode);
+
+        if (addressValidation is null)
+            return BadRequest(new ReturnApi<string>(400, "There is a problem with the hero ZipCode"));
+
+        await _heroService.SetCompleteHero(request, imageResult);
+
+        return Ok(new ReturnApi<object>(201, "Hero's image deleted successfully"));
+
+
 }
 

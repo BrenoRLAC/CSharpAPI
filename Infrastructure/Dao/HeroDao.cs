@@ -1,15 +1,15 @@
-﻿using Dapper;
+﻿using API.Domain.Hero;
+using API.Domain.Hero.Addresses;
+using API.Domain.Hero.AddressRequest;
+using API.Domain.Hero.AddressResults;
+using API.Domain.HeroImages;
+using API.Infrastructure.Interface;
+using API.Utilities;
+using CloudinaryDotNet.Actions;
+using Dapper;
 using Microsoft.Data.SqlClient;
 using System.Data;
-using API.Infrastructure.Interface;
-using API.Domain.Hero;
-using CloudinaryDotNet.Actions;
-using Newtonsoft.Json;
-using API.Domain.HeroImages;
-using API.Domain.Hero.AddressRequest;
-using API.Utilities;
-using API.Domain.Hero.AddressResults;
-using API.Domain.Hero.Addresses;
+using System.Text.Json;
 namespace API.Infrastructure.Dao;
 
 public class HeroDao(IConfiguration config) : IHeroDao
@@ -18,9 +18,9 @@ public class HeroDao(IConfiguration config) : IHeroDao
     private SqlConnection _connection;
     private SqlConnection Connection => _connection ??= new SqlConnection(_connectStr);
 
+
     public async Task<(List<HeroesResult>, int total)> ListHero(HeroFilter request)
     {
-
         const string procedure = "SP_LS_HEROES";
 
         var p = new DynamicParameters();
@@ -30,8 +30,13 @@ public class HeroDao(IConfiguration config) : IHeroDao
         p.Add("TOTAL", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
         var result = await Connection.QueryAsync<HeroesResult>(procedure, p, commandType: CommandType.StoredProcedure);
-
         var total = p.Get<int>("TOTAL");
+
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseUpper
+        };
 
         var processedResult = result.Select(item =>
         {
@@ -39,46 +44,61 @@ public class HeroDao(IConfiguration config) : IHeroDao
 
             if (!string.IsNullOrEmpty(item.Image))
             {
+                var deserialized = JsonSerializer.Deserialize<List<HeroImage>>(item.Image, options);
 
-                item.Images = JsonConvert.DeserializeObject<List<HeroImage>>(item.Image)
-                    .Select(image =>
+                if (deserialized != null)
+                {
+                    item.Images = deserialized.Select(image =>
                     {
                         if (!string.IsNullOrEmpty(image.PublicId))
                         {
                             image.PublicId = image.PublicId.Encrypt();
                         }
                         return image;
-                    })
-                    .ToList();
+                    }).ToList();
+                }
             }
             return item;
         }).ToList();
 
         return (processedResult, total);
-
-
     }
     public async Task<HeroResult> GetHeroDetail(string id)
     {
-        var hero = await Connection.QueryFirstOrDefaultAsync<HeroResult>("LIST_HERO_BY_ID", new { ID = id.DecryptInt() }, commandType: CommandType.StoredProcedure);
+        var hero = await Connection.QueryFirstOrDefaultAsync<HeroResult>(
+            "LIST_HERO_BY_ID",
+            new { ID = id.DecryptInt() },
+            commandType: CommandType.StoredProcedure
+        );
 
-        if (hero == null) return hero;
+        if (hero == null) return null;
 
-        hero.Id = int.Parse(hero.Id).EncryptInt();
+        if (int.TryParse(hero.Id, out int numericId))
+        {
+            hero.Id = numericId.EncryptInt();
+        }
 
-        if (hero.Image == null) return hero;
         if (!string.IsNullOrEmpty(hero.Image))
         {
-            hero.Images = JsonConvert.DeserializeObject<List<HeroImage>>(hero.Image)
-                .Select(image =>
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseUpper
+            };
+
+            var deserializedImages = JsonSerializer.Deserialize<List<HeroImage>>(hero.Image, options);
+
+            if (deserializedImages != null)
+            {
+                foreach (var img in deserializedImages)
                 {
-                    if (!string.IsNullOrEmpty(image.PublicId))
+                    if (!string.IsNullOrEmpty(img.PublicId))
                     {
-                        image.PublicId = image.PublicId.Encrypt();
+                        img.PublicId = img.PublicId.Encrypt();
                     }
-                    return image;
-                })
-                .ToList();
+                }
+                hero.Images = deserializedImages;
+            }
         }
         return hero;
     }
@@ -87,7 +107,6 @@ public class HeroDao(IConfiguration config) : IHeroDao
     {
         return await Connection.QueryFirstOrDefaultAsync<AddressResult>("SP_LS_HERO_ADDRESS",
         new { HERO_ID = heroId.DecryptInt() }, commandType: CommandType.StoredProcedure);
-
 
     }
 
@@ -198,6 +217,35 @@ public class HeroDao(IConfiguration config) : IHeroDao
     {
         return await Connection.QueryFirstOrDefaultAsync<int>("LIST_ACTIVE_HEROES", commandType: CommandType.StoredProcedure);
 
+    }
+
+    public async Task SetCompleteHero(CompleteHeroRequest request, ImageUploadResult imageResult)
+    {
+        var image = new DataTable("TP_CODE");
+
+        image.Columns.Add("PUBLIC_ID", typeof(string));
+        image.Columns.Add("URL", typeof(string));
+
+        image.Rows.Add(imageResult.PublicId, imageResult.SecureUrl);
+
+
+        await Connection.ExecuteAsync("SP_INSERT_COMPLETE_HERO", new
+        {
+            request.Name,
+            request.Disguise,
+            request.Description,
+            IMAGES = image,
+            request.Address.State,
+            request.Address.City,
+            request.Address.Neighborhood,
+            request.Address.ZipCode,
+            request.Address.Street,
+            request.Address.Country,
+            request.Address.Number,
+            request.Address.Complement,
+            request.Address.ReferencePoint
+
+        }, commandType: CommandType.StoredProcedure);
     }
 }
 

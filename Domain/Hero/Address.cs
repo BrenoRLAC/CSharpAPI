@@ -13,13 +13,13 @@ namespace API.Domain.Hero.Addresses
         public string Number { get; set; }
 
         [JsonPropertyName("complemento")]
-        public string Complement { get; set; }
+        public string? Complement { get; set; }
 
         [JsonPropertyName("cep")]
         public string ZipCode { get; set; }
 
         [JsonPropertyName("pontoDeReferencia")]
-        public string ReferencePoint { get; set; }
+        public string? ReferencePoint { get; set; }
 
         [JsonPropertyName("localidade")]
         public string City { get; set; }

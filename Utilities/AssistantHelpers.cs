@@ -1,7 +1,7 @@
 ﻿using API.Constants;
-using Newtonsoft.Json;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 
 namespace API.Utilities
 {
@@ -9,7 +9,7 @@ namespace API.Utilities
     {
         public static string ToJson(this object obj)
         {
-            return JsonConvert.SerializeObject(obj);
+            return JsonSerializer.Serialize(obj);
         }
         public static bool IsValidPassword(this string pwd, out string error)
         {

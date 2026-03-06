@@ -4,9 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace API.Domain.Auth
 {
     public class ResetPasswordRequest
-    {
-        [JsonIgnore] public int CodUser { get; set; }
-
+    {        
         [Required(ErrorMessage = "Password is required", AllowEmptyStrings = false)]
         public string NewPassword { get; set; }
 

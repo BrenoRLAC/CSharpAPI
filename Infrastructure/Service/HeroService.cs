@@ -4,6 +4,7 @@ using API.Domain.Hero.AddressRequest;
 using API.Domain.Hero.AddressResults;
 using API.Infrastructure.Interface;
 using CloudinaryDotNet.Actions;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace API.Infrastructure.Service
 {
@@ -63,6 +64,11 @@ namespace API.Infrastructure.Service
         public Task DeleteHeroImage(string heroId, string imageId)
         {
             return _dao.DeleteHeroImage(heroId, imageId);
+        }
+
+        public Task SetCompleteHero(CompleteHeroRequest request, ImageUploadResult imageResult)
+        {
+            return _dao.SetCompleteHero(request, imageResult);
         }
     }
 }
