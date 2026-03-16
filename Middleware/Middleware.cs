@@ -4,14 +4,9 @@ using System.Text.Json;
 
 namespace API.Middleware
 {
-    public class Middleware
+    public class Middleware(RequestDelegate next)
     {
-        private readonly RequestDelegate _next;
-
-        public Middleware(RequestDelegate next)
-        {
-            _next = next;
-        }
+        private readonly RequestDelegate _next = next;
 
         public async Task Invoke(HttpContext httpContext)
         {
@@ -32,17 +27,17 @@ namespace API.Middleware
 
             if (exception is ArgumentException) code = HttpStatusCode.BadRequest;
             if (exception is KeyNotFoundException) code = HttpStatusCode.NotFound;
-            
+
             if (exception is InvalidOperationException)
             {
                 code = HttpStatusCode.BadRequest;
                 result = JsonSerializer.Serialize(new { error = "Herói inativo ou inexistente, verifique o id informado." });
             }
-            
-          
+
+
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)code;
-            return context.Response.WriteAsync(result);
+            return context.Response.WriteAsync(result);          
         }
     }
 
