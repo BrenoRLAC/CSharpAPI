@@ -3,8 +3,11 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using API.Domain.Auth;
+using API.Domain.Jobs;
 using API.Infrastructure.Interface;
+using API.Jobs.Interfaces;
 using API.Utilities;
+using Hangfire;
 using Microsoft.IdentityModel.Tokens;
 
 namespace API.Infrastructure.Service

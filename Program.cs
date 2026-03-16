@@ -1,5 +1,4 @@
 using API.Domain;
-using API.Domain.Notification;
 using API.Infrastructure;
 using API.Infrastructure.Dao;
 using API.Infrastructure.Interface;
@@ -12,6 +11,7 @@ using API.Utilities;
 using CloudinaryServiceInterface.Infrastructure;
 using CloudinaryServices.Infrastructure;
 using Hangfire;
+using Hangfire.SqlServer;
 using RabbitMQ.Client;
 using Serilog;
 using StackExchange.Redis;
@@ -32,7 +32,6 @@ var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<stri
 var smtpSection = builder.Configuration.GetSection("SmtpSettings");
 var mailConfig = smtpSection.Get<SmtpSettings>();
 builder.Services.AddSingleton(mailConfig);
-
 
 builder.Services.AddCors(options =>
 {
@@ -66,6 +65,24 @@ builder.Services.ConfigureSwagger();
 
 builder.Services.AddHangfire(x => x.UseSqlServerStorage(builder.Configuration.GetConnectionString("Default")));
 builder.Services.AddHangfireServer();
+
+builder.Services.AddHangfire(configuration => configuration
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(builder.Configuration.GetConnectionString("Default"), new SqlServerStorageOptions
+    {
+        QueuePollInterval = TimeSpan.FromMinutes(5),
+        DisableGlobalLocks = true,
+        PrepareSchemaIfNecessary = true,
+        CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+        SchemaName = "HangFire"
+    }));
+
+builder.Services.AddHangfireServer(options =>
+{
+    options.WorkerCount = 4;
+});
 
 var config = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
@@ -106,7 +123,7 @@ app.MapHub<NotificationHub>("/notification");
 
 var recurringJobManager = app.Services.GetRequiredService<IRecurringJobManager>();
 
-recurringJobManager.AddOrUpdate<IRedisUpdate>("tempHeroes", x => x.Run(null), cronExpression: Cron.Never);
+recurringJobManager.AddOrUpdate<IRedisUpdate>("tempHeroes", x => x.Run(null), cronExpression: Cron.Monthly);
 
 app.UseCors("CorsPolicy");
 
