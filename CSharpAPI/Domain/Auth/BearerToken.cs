@@ -1,5 +1,4 @@
 ﻿using System.Text.Json.Serialization;
-
 namespace API.Domain.Auth
 {
     public class BearerToken

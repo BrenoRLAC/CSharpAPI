@@ -3,6 +3,7 @@ using API.Domain.Auth;
 using API.Infrastructure.Interface;
 using API.Utilities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 
@@ -37,19 +38,19 @@ namespace API.Controllers
             if (result.PasswordExpired)
             {
                 var tmp = Guid.NewGuid().ToString();
-                _cache.Set(tmp, JsonSerializer.Serialize(request), TimeSpan.FromMinutes(20));
-                return StatusCode(241, new ReturnApi<LoginReset>(201, "Password expired, update it", new LoginReset { ResetPwdToken = tmp.EncryptCookie() }));
+                _cache.Set(tmp, JsonSerializer.Serialize(request), TimeSpan.FromMinutes(5));
+                return StatusCode(403, new ReturnApi<LoginReset>(403, "Password expired, update it", new LoginReset { ResetPwdToken = tmp.EncryptCookie() }));
             }
 
             if (result.Temporary)
             {
                 if (result.TemporaryPasswordExpired)
-                    return BadRequest(new ReturnApi<object>(400, "Temporary Password Expired"));
+                    return StatusCode(403, new ReturnApi<object>(403, "Temporary Password Expired"));
 
                 var tmpTokenPassword = Guid.NewGuid().ToString();
                 _cache.Set(tmpTokenPassword, JsonSerializer.Serialize(request), TimeSpan.FromMinutes(5));
 
-                return StatusCode(200, new ReturnApi<LoginResetTemporary>(201, "Valid temporary password, update password", new LoginResetTemporary { data = new LoginReset { ResetPwdToken = tmpTokenPassword.EncryptCookie() } }));
+                return StatusCode(201, new ReturnApi<LoginResetTemporary>(201, "Valid temporary password, update password", new LoginResetTemporary { data = new LoginReset { ResetPwdToken = tmpTokenPassword.EncryptCookie() } }));
             }
 
             var secondAuthRequest = new SecondAuthenticationRequest()
@@ -73,8 +74,11 @@ namespace API.Controllers
 
             }
 
-            return StatusCode(241, new ReturnApi<SecondAuthToken>(201, "Second authentication code sent to your email", new SecondAuthToken { Token = tmpTokenSecondAuth.EncryptCookie() }));
-
+            return Ok(new ReturnApi<SecondAuthToken>(
+                200,
+                "Second authentication code sent to your email",
+                new SecondAuthToken { SecondAuthenticationToken = tmpTokenSecondAuth.EncryptCookie() }
+            ));
         }
 
         [HttpPut, Route("resetPassword")]
@@ -133,7 +137,7 @@ namespace API.Controllers
         {
             _logger.LogInformation("[HTTP] Request POST /Authentication/secondAuthentication/{code} {@Request}", code, request);
 
-            if (!request.Token.TryDecryptCookie(out string tokenSecondAuth))
+            if (!request.SecondAuthenticationToken.TryDecryptCookie(out string tokenSecondAuth))
                 return BadRequest(new ReturnApi<object>(400, "Invalid token"));
 
             if (!_cache.TryGetValue(tokenSecondAuth, out string secondAuthRequest))
@@ -164,7 +168,7 @@ namespace API.Controllers
         {
             _logger.LogInformation("[HTTP] Request POST /Authentication/resendSecondAuthentication {@Request}", request);
 
-            if (!request.Token.TryDecryptCookie(out string tokenSecondAuth))
+            if (!request.SecondAuthenticationToken.TryDecryptCookie(out string tokenSecondAuth))
                 return BadRequest(new ReturnApi<object>(400, "Invalid token"));
 
             if (!_cache.TryGetValue(tokenSecondAuth, out string secondAuthRequest))
@@ -176,6 +180,26 @@ namespace API.Controllers
 
             return Ok(new ReturnApi<OkResult>(200, new OkResult()));
 
+        }
+
+        [HttpPost("register")]
+        public async Task<IActionResult> SignUp([FromBody] UserRequest request)
+        {            
+            if (!request.Password.IsValidPassword(out string error))
+                return BadRequest(new ReturnApi<object>(400, error));
+            try
+            {
+                await _service.SignUp(request);
+                return Ok(new ReturnApi<object>(200, "User Successfully registered!"));
+            }
+            catch (SqlException ex) when (ex.Number == 50001 || ex.Number == 50002)
+            {             
+                return BadRequest(new ReturnApi<object>(400, ex.Message));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new ReturnApi<object>(500, "An unexpected error occurred."));
+            }
         }
 
     }

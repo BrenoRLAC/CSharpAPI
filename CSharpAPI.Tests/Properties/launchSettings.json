@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "CSharpAPI.Tests": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:51918;http://localhost:51919"
+    }
+  }
+}

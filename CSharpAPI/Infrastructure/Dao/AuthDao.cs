@@ -100,6 +100,20 @@ namespace API.Infrastructure.Dao
                 COD_USER = request.CodUser.DecryptInt(),
                 VALUE = request.Code
             }, commandType: CommandType.StoredProcedure);
+        }       
+
+        public async Task SignUp(UserRequest request)
+        {
+            const string proc = "SP_INSERT_USER";
+
+             await Connection.QueryAsync(proc, new
+            {
+                NAME = request.UserName,
+                EMAIL = request.Email,
+                PASSWORD = request.Password.PasswordEncryption()
+            }, commandType: CommandType.StoredProcedure);
         }
+
+       
     }
 }

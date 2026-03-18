@@ -13,5 +13,6 @@ namespace API.Infrastructure.Interface
         Task<AuthResult> ForgotPassword(ForgotPassword request);
         Task GenerateSecondAuth(SecondAuthenticationRequest request);
         Task<AuthResult> SecondAuthentication(SecondAuthenticationRequest request);
+        Task SignUp(UserRequest request);
     }
 }

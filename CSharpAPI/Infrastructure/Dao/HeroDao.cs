@@ -14,6 +14,14 @@ namespace API.Infrastructure.Dao;
 
 public class HeroDao(IConfiguration config) : IHeroDao
 {
+
+    private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseUpper
+    };
+
+
     private readonly string _connectStr = config.GetConnectionString("Default");
     private SqlConnection _connection;
     private SqlConnection Connection => _connection ??= new SqlConnection(_connectStr);
@@ -30,38 +38,13 @@ public class HeroDao(IConfiguration config) : IHeroDao
         p.Add("TOTAL", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
         var result = await Connection.QueryAsync<HeroesResult>(procedure, p, commandType: CommandType.StoredProcedure);
-        var total = p.Get<int>("TOTAL");
 
-        var options = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseUpper
-        };
+        var list = result.ToList();
 
-        var processedResult = result.Select(item =>
-        {
-            item.Id = int.Parse(item.Id).EncryptInt();
+        list.ForEach(ProcessedResult);
 
-            if (!string.IsNullOrEmpty(item.Image))
-            {
-                var deserialized = JsonSerializer.Deserialize<List<HeroImage>>(item.Image, options);
+        return (list, p.Get<int>("TOTAL"));
 
-                if (deserialized != null)
-                {
-                    item.Images = deserialized.Select(image =>
-                    {
-                        if (!string.IsNullOrEmpty(image.PublicId))
-                        {
-                            image.PublicId = image.PublicId.Encrypt();
-                        }
-                        return image;
-                    }).ToList();
-                }
-            }
-            return item;
-        }).ToList();
-
-        return (processedResult, total);
     }
     public async Task<HeroResult> GetHeroDetail(string id)
     {
@@ -71,35 +54,7 @@ public class HeroDao(IConfiguration config) : IHeroDao
             commandType: CommandType.StoredProcedure
         );
 
-        if (hero == null) return null;
-
-        if (int.TryParse(hero.Id, out int numericId))
-        {
-            hero.Id = numericId.EncryptInt();
-        }
-
-        if (!string.IsNullOrEmpty(hero.Image))
-        {
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseUpper
-            };
-
-            var deserializedImages = JsonSerializer.Deserialize<List<HeroImage>>(hero.Image, options);
-
-            if (deserializedImages != null)
-            {
-                foreach (var img in deserializedImages)
-                {
-                    if (!string.IsNullOrEmpty(img.PublicId))
-                    {
-                        img.PublicId = img.PublicId.Encrypt();
-                    }
-                }
-                hero.Images = deserializedImages;
-            }
-        }
+        ProcessedResult(hero);
         return hero;
     }
 
@@ -247,5 +202,24 @@ public class HeroDao(IConfiguration config) : IHeroDao
 
         }, commandType: CommandType.StoredProcedure);
     }
-}
+    private void ProcessedResult(HeroesResult hero)
+    {
+        if (hero == null) return;
 
+        if (int.TryParse(hero.Id, out int numericId))
+            hero.Id = numericId.EncryptInt();
+
+        if (!string.IsNullOrEmpty(hero.Image))
+        {
+            var deserialized = JsonSerializer.Deserialize<List<HeroImage>>(hero.Image, JsonOptions);
+            if (deserialized != null)
+            {
+                foreach (var img in deserialized.Where(i => !string.IsNullOrEmpty(i.PublicId)))
+                {
+                    img.PublicId = img.PublicId.Encrypt();
+                }
+                hero.Images = deserialized;
+            }
+        }
+    }
+}

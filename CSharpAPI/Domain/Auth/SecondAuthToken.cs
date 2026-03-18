@@ -6,7 +6,7 @@ namespace API.Domain.Auth
     public class SecondAuthToken
     {
         [Required(ErrorMessage = "Token is required", AllowEmptyStrings = false)]
-        [FromForm(Name = "token")]
-        public string Token { get; set; }
+        [FromForm(Name = "secondAuthToken")]
+        public string SecondAuthenticationToken { get; set; }
     }
 }

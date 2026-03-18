@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using API.Domain.Auth;
@@ -126,8 +125,6 @@ namespace API.Infrastructure.Service
         {
             string code = AssistantHelpers.GenerateRandomCodeNumeric();
 
-            request.Code = code;
-
             await _dao.GenerateSecondAuth(request);
 
             BackgroundJob.Enqueue<ISendEmail>(x => x.Send(null, new SecondAuthenticationEmail
@@ -144,7 +141,11 @@ namespace API.Infrastructure.Service
             var token = await _dao.SecondAuthentication(request);
 
             return token;
-        }
+        }      
 
+        public Task SignUp(UserRequest request)
+        {
+            return _dao.SignUp(request);
+        }
     }
 }
